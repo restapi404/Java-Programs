@@ -1,0 +1,150 @@
+import java.sql.*;
+import java.util.*;
+
+/*
+//Database and Table Creation in MySQL:-
+CREATE DATABASE library_db;
+USE library_db;
+
+CREATE TABLE books (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(100),
+    author VARCHAR(100),
+    available BOOLEAN DEFAULT TRUE
+);
+*/
+
+public class LibraryManagementSystem {
+
+    static final String URL = "jdbc:mysql://localhost:3306/library_db";
+    static final String USER = "root";        // your MySQL username
+    static final String PASS = "password";    // your MySQL password
+
+    static Connection conn;
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        try {
+            conn = DriverManager.getConnection(URL, USER, PASS);
+            System.out.println("Connected to Database Successfully!");
+
+            while (true) {
+                System.out.println("\n===== LIBRARY MANAGEMENT SYSTEM =====");
+                System.out.println("1. Add Book");
+                System.out.println("2. View All Books");
+                System.out.println("3. Issue Book");
+                System.out.println("4. Return Book");
+                System.out.println("5. Exit");
+                System.out.print("Enter your choice: ");
+
+                if (!sc.hasNextInt()) {
+                    System.out.println("Please enter a valid input!");
+                    sc.next(); // consume invalid input
+                    continue;
+                }
+
+                int choice = sc.nextInt();
+                sc.nextLine();
+
+                switch (choice) {
+                    case 1 -> addBook(sc);
+                    case 2 -> viewBooks();
+                    case 3 -> issueBook(sc);
+                    case 4 -> returnBook(sc);
+                    case 5 -> {
+                        System.out.println("Exiting...");
+                        conn.close();
+                        System.exit(0);
+                    }
+                    default -> System.out.println("Invalid choice! Try again.");
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Database connection failed!");
+            e.printStackTrace();
+        }
+    }
+
+    // Add new book
+    static void addBook(Scanner sc) throws SQLException {
+        System.out.print("Enter Book Title: ");
+        String title = sc.nextLine();
+        System.out.print("Enter Author Name: ");
+        String author = sc.nextLine();
+
+        String sql = "INSERT INTO books (title, author, available) VALUES (?, ?, TRUE)";
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setString(1, title);
+        ps.setString(2, author);
+        ps.executeUpdate();
+
+        System.out.println("Book added successfully!");
+    }
+
+    // View all books
+    static void viewBooks() throws SQLException {
+        String sql = "SELECT * FROM books";
+        Statement stmt = conn.createStatement();
+        ResultSet rs = stmt.executeQuery(sql);
+
+        System.out.println("\n--- Book List ---");
+        System.out.printf("%-5s %-30s %-20s %-10s%n", "ID", "Title", "Author", "Available");
+        while (rs.next()) {
+            System.out.printf("%-5d %-30s %-20s %-10s%n",
+                    rs.getInt("id"),
+                    rs.getString("title"),
+                    rs.getString("author"),
+                    rs.getBoolean("available") ? "Yes" : "No");
+        }
+    }
+
+    // Issue a book
+    static void issueBook(Scanner sc) throws SQLException {
+        System.out.print("Enter Book ID to Issue: ");
+        int id = sc.nextInt();
+
+        String check = "SELECT available FROM books WHERE id=?";
+        PreparedStatement ps1 = conn.prepareStatement(check);
+        ps1.setInt(1, id);
+        ResultSet rs = ps1.executeQuery();
+
+        if (rs.next()) {
+            if (!rs.getBoolean("available")) {
+                System.out.println("Book already issued!");
+                return;
+            }
+            String sql = "UPDATE books SET available=FALSE WHERE id=?";
+            PreparedStatement ps2 = conn.prepareStatement(sql);
+            ps2.setInt(1, id);
+            ps2.executeUpdate();
+            System.out.println("Book issued successfully!");
+        } else {
+            System.out.println("Book ID not found!");
+        }
+    }
+
+    // Return a book
+    static void returnBook(Scanner sc) throws SQLException {
+        System.out.print("Enter Book ID to Return: ");
+        int id = sc.nextInt();
+
+        String check = "SELECT available FROM books WHERE id=?";
+        PreparedStatement ps1 = conn.prepareStatement(check);
+        ps1.setInt(1, id);
+        ResultSet rs = ps1.executeQuery();
+
+        if (rs.next()) {
+            if (rs.getBoolean("available")) {
+                System.out.println("Book was not issued!");
+                return;
+            }
+            String sql = "UPDATE books SET available=TRUE WHERE id=?";
+            PreparedStatement ps2 = conn.prepareStatement(sql);
+            ps2.setInt(1, id);
+            ps2.executeUpdate();
+            System.out.println("Book returned successfully!");
+        } else {
+            System.out.println("Book ID not found!");
+        }
+    }
+}
