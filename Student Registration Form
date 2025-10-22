@@ -1,0 +1,165 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+
+/*
+//Database and Table creation in MySQL
+CREATE DATABASE student_db;
+USE student_db;
+
+CREATE TABLE students (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    phone VARCHAR(15),
+    department VARCHAR(50)
+);
+*/
+
+public class StudentRegistrationForm extends JFrame implements ActionListener {
+    // Components
+    JLabel lblName, lblEmail, lblPhone, lblDept, lblTitle;
+    JTextField txtName, txtEmail, txtPhone, txtDept;
+    JButton btnSubmit, btnClear;
+
+    // Database credentials
+    final String URL = "jdbc:mysql://localhost:3306/student_db";
+    final String USER = "root";        // your MySQL username
+    final String PASS = "password";    // your MySQL password
+
+    Connection conn;
+
+    // Constructor
+    public StudentRegistrationForm() {
+        setTitle("Student Registration Form");
+        setSize(400, 400);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Title Label
+        lblTitle = new JLabel("STUDENT REGISTRATION FORM", JLabel.CENTER);
+        lblTitle.setFont(new Font("Arial", Font.BOLD, 16));
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+        add(lblTitle, gbc);
+        gbc.gridwidth = 1;
+
+        // Name
+        lblName = new JLabel("Name:");
+        gbc.gridx = 0; gbc.gridy = 1;
+        add(lblName, gbc);
+        txtName = new JTextField(20);
+        gbc.gridx = 1;
+        add(txtName, gbc);
+
+        // Email
+        lblEmail = new JLabel("Email:");
+        gbc.gridx = 0; gbc.gridy = 2;
+        add(lblEmail, gbc);
+        txtEmail = new JTextField(20);
+        gbc.gridx = 1;
+        add(txtEmail, gbc);
+
+        // Phone
+        lblPhone = new JLabel("Phone:");
+        gbc.gridx = 0; gbc.gridy = 3;
+        add(lblPhone, gbc);
+        txtPhone = new JTextField(15);
+        gbc.gridx = 1;
+        add(txtPhone, gbc);
+
+        // Department
+        lblDept = new JLabel("Department:");
+        gbc.gridx = 0; gbc.gridy = 4;
+        add(lblDept, gbc);
+        txtDept = new JTextField(20);
+        gbc.gridx = 1;
+        add(txtDept, gbc);
+
+        // Buttons
+        btnSubmit = new JButton("Submit");
+        btnClear = new JButton("Clear");
+        gbc.gridx = 0; gbc.gridy = 5;
+        add(btnSubmit, gbc);
+        gbc.gridx = 1;
+        add(btnClear, gbc);
+
+        // Action listeners
+        btnSubmit.addActionListener(this);
+        btnClear.addActionListener(this);
+
+        // Connect to DB
+        try {
+            conn = DriverManager.getConnection(URL, USER, PASS);
+            System.out.println("Connected to Database Successfully!");
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Database Connection Failed!", "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+
+        setVisible(true);
+    }
+
+    // Handle button clicks
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == btnSubmit) {
+            registerStudent();
+        } else if (e.getSource() == btnClear) {
+            clearFields();
+        }
+    }
+
+    // Register student
+    void registerStudent() {
+        String name = txtName.getText().trim();
+        String email = txtEmail.getText().trim();
+        String phone = txtPhone.getText().trim();
+        String dept = txtDept.getText().trim();
+
+        // Input validation
+        if (name.isEmpty() || email.isEmpty() || phone.isEmpty() || dept.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "All fields are required!", "Warning", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (!email.contains("@") || !email.contains(".")) {
+            JOptionPane.showMessageDialog(this, "Invalid email format!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (!phone.matches("\\d{10}")) {
+            JOptionPane.showMessageDialog(this, "Phone must be 10 digits!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Insert into database
+        try {
+            String sql = "INSERT INTO students (name, email, phone, department) VALUES (?, ?, ?, ?)";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, name);
+            ps.setString(2, email);
+            ps.setString(3, phone);
+            ps.setString(4, dept);
+            ps.executeUpdate();
+
+            JOptionPane.showMessageDialog(this, "Student Registered Successfully!");
+            clearFields();
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error while saving to database!", "Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    }
+
+    // Clear all fields
+    void clearFields() {
+        txtName.setText("");
+        txtEmail.setText("");
+        txtPhone.setText("");
+        txtDept.setText("");
+    }
+
+    public static void main(String[] args) {
+        new StudentRegistrationForm();
+    }
+}
